@@ -30,8 +30,8 @@ def main():
         'canvas_api_key', metavar='key', type=str,
         help='Canvas API Key obtained from "settings"')
     parser.add_argument(
-        '-u', '--canvas_url', type=str, default='canvas.ubc.ca',
-        help='Canvas base URL (default: canvas.ubc.ca)')
+        '-u', '--canvas_url', type=str, default='bruinlearn.ucla.edu',
+        help='Canvas base URL (default: bruinlearn.ucla.edu)')
     parser.add_argument(
         '-v', '--video', action='store_true',
         help='Enable kaltura video downloads (Warning: spacetime intensive)')
@@ -42,7 +42,7 @@ def main():
         '-d', '--directory', type=str, default='./files',
         help='Directory to store downloaded files in (default: ./files)')
     parser.add_argument(
-        '-m', '--markdown', action="store_true",
+        '-m', '--markdown', action="store_false",
         help='Convert downloaded pages to markdown')
 
     args = parser.parse_args()
@@ -57,6 +57,7 @@ def main():
 
     logger.info("Starting scrape")
     scraper.scrape()
+    logger.info("Finished scrape")
 
 
 if __name__ == "__main__":

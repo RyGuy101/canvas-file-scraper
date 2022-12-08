@@ -11,7 +11,7 @@ import urllib
 from bs4 import BeautifulSoup
 from markdownify import markdownify as md
 from canvasapi import Canvas
-from canvasapi.exceptions import Unauthorized, ResourceDoesNotExist
+from canvasapi.exceptions import Unauthorized, ResourceDoesNotExist, Forbidden
 
 from canvasapi.canvas_object import CanvasObject
 from canvasapi.file import File
@@ -84,7 +84,7 @@ class CanvasScraper:
                 if external_tools:
                     import pdb
                     pdb.set_trace()
-            except (Unauthorized, ResourceDoesNotExist) as e:
+            except (Unauthorized, ResourceDoesNotExist, Forbidden) as e:
                 self.logger.warning(e)
                 self.logger.warning(f"External tools not accesible")
 
@@ -97,7 +97,7 @@ class CanvasScraper:
                         self.handle_assignment(a)
                     finally:
                         self.pop()
-            except (Unauthorized, ResourceDoesNotExist) as e:
+            except (Unauthorized, ResourceDoesNotExist, Forbidden) as e:
                 self.logger.warning(e)
                 self.logger.warning(f"Assignments not accesible")
             finally:
@@ -112,7 +112,7 @@ class CanvasScraper:
                         self.handle_page(p)
                     finally:
                         self.pop()
-            except (Unauthorized, ResourceDoesNotExist) as e:
+            except (Unauthorized, ResourceDoesNotExist, Forbidden) as e:
                 self.logger.warning(e)
                 self.logger.warning(f"Pages not accesible")
             finally:
@@ -126,7 +126,7 @@ class CanvasScraper:
                 if self._dl_page(fp, fp_path) and self.markdown:
                     self._dl_page_data(fp_path, course._requester)
                     self._markdownify(fp_path, fp_md_path)
-            except (Unauthorized, ResourceDoesNotExist) as e:
+            except (Unauthorized, ResourceDoesNotExist, Forbidden) as e:
                 self.logger.warning(e)
                 self.logger.warning(f"Front page not accesible")
 
@@ -134,7 +134,7 @@ class CanvasScraper:
                 modules = course.get_modules()
                 for m in modules:
                     self.recurse_module(m)
-            except (Unauthorized, ResourceDoesNotExist) as e:
+            except (Unauthorized, ResourceDoesNotExist, Forbidden) as e:
                 self.logger.warning(e)
                 self.logger.warning(f"Modules not accesible")
 
@@ -142,7 +142,7 @@ class CanvasScraper:
                 groups = course.get_groups()
                 for g in groups:
                     self.recurse_group(g)
-            except (Unauthorized, ResourceDoesNotExist) as e:
+            except (Unauthorized, ResourceDoesNotExist, Forbidden) as e:
                 self.logger.warning(e)
                 self.logger.warning(f"Groups not accesible")
 
@@ -174,7 +174,8 @@ class CanvasScraper:
                 folders = obj.get_folders()
                 for f in folders:
                     self.recurse_folder(f)
-            except Unauthorized:
+            except (Unauthorized, Forbidden) as e:
+                self.logger.warning(e)
                 self.logger.warning(f"Files not accesible")
         finally:
             self.pop()
@@ -194,7 +195,7 @@ class CanvasScraper:
                             f"Media '{m.title}' type {m.media_type} is unsupported")
                         import pdb
                         pdb.set_trace()
-            except (Unauthorized, ResourceDoesNotExist) as e:
+            except (Unauthorized, ResourceDoesNotExist, Forbidden) as e:
                 self.logger.warning(e)
                 self.logger.warning(f"Media objects not accesible")
         finally:
@@ -222,10 +223,10 @@ class CanvasScraper:
                         try:
                             f.download(f_path)
                             self.logger.info(f"{f_path} downloaded")
-                        except (Unauthorized, ResourceDoesNotExist) as e:
+                        except (Unauthorized, ResourceDoesNotExist, Forbidden) as e:
                             self.logger.warning(f"file not accesible")
                             self.logger.warning(str(e))
-            except (Unauthorized, ResourceDoesNotExist) as e:
+            except (Unauthorized, ResourceDoesNotExist, Forbidden) as e:
                 self.logger.warning(f"folder not accesible")
                 self.logger.warning(str(e))
         finally:
@@ -506,7 +507,11 @@ class CanvasScraper:
         if links:
             self._mkd(os.path.join(self.path, "files"))
         for link in links:
-            href = link.get("href")
+            has_data_api_endpoint = True
+            href = link.get("data-api-endpoint")
+            if not href:
+                has_data_api_endpoint = False
+                href = link.get("href")
             title = link.get("title")
             if not title:
                 title = link.text
@@ -519,7 +524,7 @@ class CanvasScraper:
                 self.logger.warning("Page has been visited before, skipping")
                 continue
             self.visited_page_links.append(href)
-            if link.get("class") and "instructure_file_link" in link["class"] and "canvas" in href:
+            if (link.get("class") and "instructure_file_link" in link["class"] and "canvas" in href) or (has_data_api_endpoint and "/files/" in href):
                 # This is necessary because files don't always show up
                 # under the files section of a course for some reason
                 self.logger.info(
@@ -673,10 +678,10 @@ class CanvasScraper:
                 f.writelines(md(src))
 
     def _should_write(self, path):
-        if os.path.isfile(path) and self.overwrite is "no":
+        if os.path.isfile(path) and self.overwrite == "no":
             self.logger.debug(f"Skipping file {path}")
             return False
-        elif (self.overwrite is "ask" and
+        elif (self.overwrite == "ask" and
                 input(f"{path} already exists, overwrite? (y/n)") != "y"):
             return False
         # Ensure folder exists before writing

@@ -520,9 +520,9 @@ class CanvasScraper:
                 continue
             self.logger.info(f"Downloading link for: {title}")
             self.logger.info(href)
-            if href in self.visited_page_links:
-                self.logger.warning("Page has been visited before, skipping")
-                continue
+            # if href in self.visited_page_links:
+            #     self.logger.warning("Page has been visited before, skipping")
+            #     continue
             self.visited_page_links.append(href)
             if (link.get("class") and "instructure_file_link" in link["class"] and "canvas" in href) or (has_data_api_endpoint and "/files/" in href):
                 # This is necessary because files don't always show up

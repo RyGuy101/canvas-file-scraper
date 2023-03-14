@@ -15,7 +15,8 @@ If you use [pipenv](https://github.com/pypa/pipenv) you can just run `pipenv ins
 python canvas-scraper.py <CANVAS_API_KEY>
 ```
 
-For info on how to get an API key please refer to the [Canvas Dev course](https://canvas.instructure.com/courses/785215/pages/getting-started-with-the-api)
+For info on how to get an API key please refer to the [Canvas Dev course](https://canvas.instructure.com/courses/785215/pages/getting-started-with-the-api).
+ - tl;dr: Go to https://bruinlearn.ucla.edu/profile/settings and click "New Access Token."
 
 ## Todo
  - Add async option
